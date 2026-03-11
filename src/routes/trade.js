@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { placeTrade } = require('../controllers/tradeCtrl');
+const { protect } = require('../middleware/authMiddleware'); // Import protect
 
-// Define the route for placing a trade
-router.post('/place', placeTrade);
+// Add 'protect' middleware here
+router.post('/place', protect, placeTrade);
 
 module.exports = router;
