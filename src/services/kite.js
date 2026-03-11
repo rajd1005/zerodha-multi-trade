@@ -19,7 +19,6 @@ class KiteService {
         }
     }
 
-    // New Method: Initialize WebSocket for Live LTP
     initTicker(instrumentTokens, onTickCallback) {
         this.ticker = new KiteTicker({
             api_key: this.apiKey,
@@ -29,8 +28,6 @@ class KiteService {
         this.ticker.connect();
 
         this.ticker.on("ticks", (ticks) => {
-            // Ticks contain the live LTP data. We pass it to the callback function
-            // where our Trailing SL and Target logic will be handled.
             if (onTickCallback && typeof onTickCallback === 'function') {
                 onTickCallback(ticks);
             }
@@ -51,7 +48,6 @@ class KiteService {
         });
     }
 
-    // Method to modify an existing order (used for Trailing SL)
     async modifyOrder(orderId, params) {
         try {
             return await this.kite.modifyOrder("regular", orderId, params);
@@ -61,7 +57,6 @@ class KiteService {
         }
     }
 
-    // Method to exit/cancel an order (used when Target is hit)
     async cancelOrder(orderId) {
         try {
             return await this.kite.cancelOrder("regular", orderId);
@@ -70,9 +65,8 @@ class KiteService {
             throw error;
         }
     }
-}
 
-// Fetch available funds/margins
+    // MOVED INSIDE THE CLASS
     async getMargins() {
         try {
             return await this.kite.getMargins();
@@ -82,7 +76,6 @@ class KiteService {
         }
     }
 
-    // Fetch live positions
     async getPositions() {
         try {
             return await this.kite.getPositions();
@@ -92,15 +85,14 @@ class KiteService {
         }
     }
 
-    // Fetch all active instruments (symbols, strike prices, tokens)
     async getInstruments(exchange) {
         try {
-            // Exchange can be 'NFO', 'NSE', 'BSE', 'MCX'
             return await this.kite.getInstruments(exchange);
         } catch (error) {
             console.error("Failed to fetch instruments:", error.message);
             throw error;
         }
     }
+} // <--- Class properly closes here
 
 module.exports = KiteService;
