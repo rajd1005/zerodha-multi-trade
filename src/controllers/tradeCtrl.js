@@ -1,5 +1,9 @@
 const { executeMultiAccountTrade } = require('../services/order');
 const BrokerAccount = require('../models/BrokerAccount');
+const { startMonitoring } = require('../workers/tradeMonitor');
+
+// Flag to ensure we don't start multiple duplicate WebSocket connections
+let isMonitorRunning = false;
 
 const placeTrade = async (req, res) => {
     try {
@@ -15,7 +19,14 @@ const placeTrade = async (req, res) => {
             return res.status(400).json({ error: "No active broker accounts found. Please add an API key first." });
         }
 
-        // 2. Pass the real accounts to our execution service
+        // 2. Start the WebSocket Monitor if it isn't running already
+        // We use the first linked account to stream the live market data
+        if (!isMonitorRunning && tradeDetails.instrumentToken) {
+            startMonitoring(linkedAccounts[0]);
+            isMonitorRunning = true;
+        }
+
+        // 3. Execute the trades across all accounts and send to monitor
         const results = await executeMultiAccountTrade(tradeDetails, linkedAccounts);
         
         res.status(200).json({
