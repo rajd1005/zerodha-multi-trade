@@ -5,6 +5,6 @@ const { protect, admin } = require('../middleware/authMiddleware');
 
 router.get('/users', protect, admin, getAllUsers);
 router.put('/users/:id', protect, admin, updateUserStatus);
-router.post('/users', protect, admin, adminCreateUser); // New Route
+router.post('/users', protect, admin, adminCreateUser);
 
 module.exports = router;
