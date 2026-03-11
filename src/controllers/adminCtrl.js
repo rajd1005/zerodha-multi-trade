@@ -1,60 +1,52 @@
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
-// @desc    Get all users (Admin only)
-// @route   GET /api/admin/users
+// @desc    Admin manually creates a new user
+// @route   POST /api/admin/users
 // @access  Private/Admin
-const getAllUsers = async (req, res) => {
+const adminCreateUser = async (req, res) => {
     try {
-        // Fetch all users but exclude their passwords from the result
-        const users = await User.find({}).select('-password');
-        res.status(200).json(users);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch users' });
-    }
-};
+        const { name, email, password, isDemo, subscriptionDays } = req.body;
 
-// @desc    Update user access, subscription, or demo status
-// @route   PUT /api/admin/users/:id
-// @access  Private/Admin
-const updateUserAccess = async (req, res) => {
-    try {
-        const { isActive, isDemo, subscriptionDaysToAdd } = req.body;
-        
-        const user = await User.findById(req.params.id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        const userExists = await User.findOne({ email });
+        if (userExists) return res.status(400).json({ error: 'User already exists' });
 
-        // Update basic status
-        if (typeof isActive !== 'undefined') user.isActive = isActive;
-        if (typeof isDemo !== 'undefined') user.isDemo = isDemo;
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Logic to add days to subscription or demo
-        if (subscriptionDaysToAdd) {
-            const currentDate = user.subscriptionEndDate && user.subscriptionEndDate > Date.now() 
-                ? new Date(user.subscriptionEndDate) 
-                : new Date();
-                
-            currentDate.setDate(currentDate.getDate() + subscriptionDaysToAdd);
-            user.subscriptionEndDate = currentDate;
+        // Calculate subscription end date if days are provided
+        let subscriptionEndDate = null;
+        if (subscriptionDays) {
+            subscriptionEndDate = new Date();
+            subscriptionEndDate.setDate(subscriptionEndDate.getDate() + parseInt(subscriptionDays));
         }
 
-        const updatedUser = await user.save();
-        
-        res.status(200).json({
-            message: 'User access updated successfully',
-            user: {
-                _id: updatedUser._id,
-                name: updatedUser.name,
-                email: updatedUser.email,
-                isActive: updatedUser.isActive,
-                isDemo: updatedUser.isDemo,
-                subscriptionEndDate: updatedUser.subscriptionEndDate
-            }
+        const user = await User.create({
+            name,
+            email,
+            password: hashedPassword,
+            isDemo: isDemo || false,
+            subscriptionEndDate,
+            isActive: true // Admin created users are active by default
         });
 
+        res.status(201).json({
+            message: "User created successfully",
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        });
     } catch (error) {
-        console.error("Admin Update Error:", error);
-        res.status(500).json({ error: 'Failed to update user' });
+        res.status(500).json({ error: "Failed to create user" });
     }
 };
 
-module.exports = { getAllUsers, updateUserAccess };
+// Ensure you export the new function
+module.exports = {
+    getAllUsers,
+    updateUserStatus,
+    adminCreateUser // Add this to exports
+};
