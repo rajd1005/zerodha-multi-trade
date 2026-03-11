@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { placeTrade, getPaperTrades, toggleTradeMode } = require('../controllers/tradeCtrl');
+const { placeTrade, placeBasketTrade, getPaperTrades, toggleTradeMode } = require('../controllers/tradeCtrl');
 const { protect } = require('../middleware/authMiddleware');
 
-// Execute trade (handles both paper and live automatically)
+// Execute a single trade (handles both paper and live automatically)
 router.post('/place', protect, placeTrade);
+
+// Execute multiple trades at once (Basket Orders)
+router.post('/basket', protect, placeBasketTrade);
 
 // Fetch virtual paper trades
 router.get('/paper-history', protect, getPaperTrades);
