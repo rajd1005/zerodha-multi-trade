@@ -72,4 +72,35 @@ class KiteService {
     }
 }
 
+// Fetch available funds/margins
+    async getMargins() {
+        try {
+            return await this.kite.getMargins();
+        } catch (error) {
+            console.error("Failed to fetch margins:", error.message);
+            throw error;
+        }
+    }
+
+    // Fetch live positions
+    async getPositions() {
+        try {
+            return await this.kite.getPositions();
+        } catch (error) {
+            console.error("Failed to fetch positions:", error.message);
+            throw error;
+        }
+    }
+
+    // Fetch all active instruments (symbols, strike prices, tokens)
+    async getInstruments(exchange) {
+        try {
+            // Exchange can be 'NFO', 'NSE', 'BSE', 'MCX'
+            return await this.kite.getInstruments(exchange);
+        } catch (error) {
+            console.error("Failed to fetch instruments:", error.message);
+            throw error;
+        }
+    }
+
 module.exports = KiteService;
