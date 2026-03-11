@@ -17,6 +17,10 @@ const userSchema = new mongoose.Schema({
     
     // Trade Mode Preference
     tradeMode: { type: String, enum: ['paper', 'live'], default: 'paper' },
+
+    // Password Reset Fields
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Date },
     
     createdAt: { type: Date, default: Date.now }
 });
