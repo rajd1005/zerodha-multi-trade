@@ -1,20 +1,44 @@
 const webpush = require('web-push');
 const NotificationSub = require('../models/NotificationSub');
+const SystemConfig = require('../models/SystemConfig');
 
-// You will generate these VAPID keys later and put them in your Railway .env
-// For now, we use placeholders so the server doesn't crash if they are missing
-const publicVapidKey = process.env.VAPID_PUBLIC_KEY || 'BM_dummy_public_key_generate_later';
-const privateVapidKey = process.env.VAPID_PRIVATE_KEY || 'dummy_private_key';
+// @desc Auto-generates and loads VAPID keys from the database
+const initVapidKeys = async () => {
+    try {
+        let config = await SystemConfig.findOne({ keyName: 'VAPID_KEYS' });
 
-webpush.setVapidDetails(
-    'mailto:your-email@example.com',
-    publicVapidKey,
-    privateVapidKey
-);
+        if (!config) {
+            console.log("⚙️ No VAPID keys found in DB. Generating new ones now...");
+            
+            // Automatically generate keys
+            const vapidKeys = webpush.generateVAPIDKeys();
+            
+            // Save them permanently to MongoDB
+            config = await SystemConfig.create({
+                keyName: 'VAPID_KEYS',
+                publicKey: vapidKeys.publicKey,
+                privateKey: vapidKeys.privateKey
+            });
+            console.log("✅ New VAPID keys generated and saved to DB successfully!");
+        } else {
+            console.log("✅ VAPID keys loaded from Database.");
+        }
 
+        // Initialize web-push with the persistent keys
+        webpush.setVapidDetails(
+            'mailto:admin@zerodhatradesystem.com', // You can change this to your email
+            config.publicKey,
+            config.privateKey
+        );
+
+    } catch (error) {
+        console.error("❌ Failed to initialize VAPID keys:", error.message);
+    }
+};
+
+// @desc Sends the actual push notification to the user's devices
 const sendPushNotification = async (userId, payload) => {
     try {
-        // Find all devices this user has allowed notifications on
         const subscriptions = await NotificationSub.find({ userId });
 
         if (subscriptions.length === 0) return;
@@ -22,13 +46,13 @@ const sendPushNotification = async (userId, payload) => {
         const pushPayload = JSON.stringify({
             title: payload.title || 'Trade Alert',
             body: payload.message,
-            icon: '/icon-192x192.png'
+            icon: '/icon-192x192.png' // This will look for the logo in your PWA frontend
         });
 
         const sendPromises = subscriptions.map(sub => 
             webpush.sendNotification(sub, pushPayload).catch(err => {
-                console.error("Failed to send to a subscription, it might be expired:", err.message);
-                // Optionally delete expired subscriptions here
+                console.error("Failed to send push notification. Subscription might be revoked:", err.message);
+                // If the user blocked notifications or the endpoint expired, delete it from DB
                 if (err.statusCode === 410 || err.statusCode === 404) {
                     return NotificationSub.findByIdAndDelete(sub._id);
                 }
@@ -41,4 +65,4 @@ const sendPushNotification = async (userId, payload) => {
     }
 };
 
-module.exports = { sendPushNotification };
+module.exports = { initVapidKeys, sendPushNotification };
