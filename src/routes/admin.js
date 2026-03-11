@@ -1,13 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { getAllUsers, updateUserAccess } = require('../controllers/adminCtrl');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { getAllUsers, updateUserStatus, adminCreateUser } = require('../controllers/adminCtrl');
+const { protect, admin } = require('../middleware/authMiddleware');
 
-// All routes here require the user to be logged in AND be an admin
-router.route('/users')
-    .get(protect, adminOnly, getAllUsers);
-
-router.route('/users/:id')
-    .put(protect, adminOnly, updateUserAccess);
+router.get('/users', protect, admin, getAllUsers);
+router.put('/users/:id', protect, admin, updateUserStatus);
+router.post('/users', protect, admin, adminCreateUser); // New Route
 
 module.exports = router;
