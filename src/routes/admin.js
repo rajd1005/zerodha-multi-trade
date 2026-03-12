@@ -1,15 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const { getAllUsers, updateUserStatus, adminCreateUser } = require('../controllers/adminCtrl');
-const { protect, admin } = require('../middleware/authMiddleware');
 
-// Get all registered users
-router.get('/users', protect, admin, getAllUsers);
+// CHANGE 'admin' TO 'adminOnly' IN THE IMPORT BELOW
+const { protect, adminOnly } = require('../middleware/authMiddleware');
 
-// Update a specific user's subscription or status
-router.put('/users/:id', protect, admin, updateUserStatus);
+// Get all registered users - UPDATE 'admin' TO 'adminOnly'
+router.get('/users', protect, adminOnly, getAllUsers);
 
-// Manually add a new user
-router.post('/users', protect, admin, adminCreateUser);
+// Update a specific user's subscription or status - UPDATE 'admin' TO 'adminOnly'
+router.put('/users/:id', protect, adminOnly, updateUserStatus);
+
+// Manually add a new user - UPDATE 'admin' TO 'adminOnly'
+router.post('/users', protect, adminOnly, adminCreateUser);
 
 module.exports = router;
