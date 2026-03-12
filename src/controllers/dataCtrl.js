@@ -57,7 +57,6 @@ const searchInstruments = async (req, res) => {
             results = results.filter(item => item.exchange === exchange);
         }
 
-        // IMPROVEMENT: Sort to prioritize exact symbol matches and Cash markets (NSE/BSE)
         results.sort((a, b) => {
             const aExact = a.tradingsymbol === searchString;
             const bExact = b.tradingsymbol === searchString;
@@ -118,10 +117,26 @@ const getOptionChain = async (req, res) => {
         
         if (options.length === 0) return res.json([]);
 
-        const expiries = [...new Set(options.map(i => i.expiry))].sort((a, b) => new Date(a) - new Date(b));
-        const nearestExpiry = expiries[0];
+        // Filter out past expiries just in case
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        const validOptions = options.filter(i => new Date(i.expiry) >= today);
+        const optionsToUse = validOptions.length > 0 ? validOptions : options;
 
-        const nearestOptions = options.filter(i => i.expiry === nearestExpiry);
+        const expiries = [...new Set(optionsToUse.map(i => i.expiry))].sort((a, b) => new Date(a) - new Date(b));
+        
+        // FIX: Find a valid expiry that has a proper option chain (> 10 strikes) to avoid anomalies
+        let nearestExpiry = expiries[0];
+        for (let exp of expiries) {
+            const strikeCount = new Set(optionsToUse.filter(i => i.expiry === exp).map(i => i.strike)).size;
+            if (strikeCount > 10) {
+                nearestExpiry = exp;
+                break;
+            }
+        }
+
+        const nearestOptions = optionsToUse.filter(i => i.expiry === nearestExpiry);
         const chainMap = {};
         
         nearestOptions.forEach(opt => {
