@@ -116,10 +116,20 @@ const getOptionChain = async (req, res) => {
             instrumentCache.lastFetched = Date.now();
         }
 
-        // Find all NFO options matching the underlying symbol name
-        const options = instrumentCache.data.filter(i => i.name === symbol && i.segment === 'NFO-OPT');
+        let searchSymbol = symbol.toUpperCase();
         
-        if (options.length === 0) return res.json([]);
+        // Normalize common NSE Index names to match their Option names
+        if (searchSymbol === 'NIFTY 50') searchSymbol = 'NIFTY';
+        if (searchSymbol === 'NIFTY BANK') searchSymbol = 'BANKNIFTY';
+        if (searchSymbol === 'NIFTY FIN SERVICE') searchSymbol = 'FINNIFTY';
+        if (searchSymbol === 'NIFTY MID SELECT') searchSymbol = 'MIDCPNIFTY';
+
+        // Find all options matching the underlying symbol name (NFO or BFO for Sensex)
+        const options = instrumentCache.data.filter(i => 
+            i.name === searchSymbol && (i.segment === 'NFO-OPT' || i.segment === 'BFO-OPT')
+        );
+        
+        if (options.length === 0) return res.json([]); // Return empty if truly no options
 
         // Get unique expiries and find the closest one
         const expiries = [...new Set(options.map(i => i.expiry))].sort((a, b) => new Date(a) - new Date(b));
