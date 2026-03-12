@@ -64,10 +64,11 @@ const searchInstruments = async (req, res) => {
             instrumentCache.lastFetched = Date.now();
         }
 
-        // Filter the cached data based on the user's search string (e.g., "NIFTY24APR22500CE")
+// Filter the cached data based on the user's search string (e.g., "NIFTY24APR22500CE")
         const searchString = query.toUpperCase();
         const results = instrumentCache.data
-            .filter(item => item.tradingsymbol.includes(searchString))
+            // Added safety check: item && item.tradingsymbol
+            .filter(item => item && item.tradingsymbol && item.tradingsymbol.includes(searchString))
             .slice(0, 50); // Limit to 50 results to keep the UI fast
 
         res.status(200).json(results);
