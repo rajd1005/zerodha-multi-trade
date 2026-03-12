@@ -66,7 +66,6 @@ class KiteService {
         }
     }
 
-    // MOVED INSIDE THE CLASS
     async getMargins() {
         try {
             return await this.kite.getMargins();
@@ -93,6 +92,17 @@ class KiteService {
             throw error;
         }
     }
+
+    // NEW: Fetch Live LTP for an array of instruments (e.g., ["NSE:INFY", "NFO:NIFTY24MAY22000CE"])
+    async getLTP(instruments) {
+        try {
+            return await this.kite.getLTP(instruments);
+        } catch (error) {
+            console.error("Failed to fetch LTP:", error.message);
+            throw error;
+        }
+    }
+
 } // <--- Class properly closes here
 
 module.exports = KiteService;
